@@ -23,6 +23,7 @@ class PersonnalDataSubscriber implements EventSubscriber
     public function __construct(DataProtectionOfficer $dataProtectionOfficer)
     {
         $this->dataProtectionOfficer = $dataProtectionOfficer;
+        $this->annotationManager = $annotationManager;
     }
 
     public function getSubscribedEvents(): array

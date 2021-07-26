@@ -5,16 +5,19 @@ namespace Ocd\PersonnalDataBundle\Event\Subscriber;
 use Doctrine\Common\EventSubscriber;
 use Doctrine\ORM\Events;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
+use Ocd\PersonnalDataBundle\Annotation\AnnotationManager;
 use Ocd\PersonnalDataBundle\Service\DataProtectionOfficer;
 
 class DoctrineSubscriber implements EventSubscriber
 {
 
+    private AnnotationManager $annotationManager;
     private DataProtectionOfficer $dataProtectionOfficer;
     private bool $subscribeToDoctrine=false;
 
-    public function __construct(DataProtectionOfficer $dataProtectionOfficer, $subscribeToDoctrine=false)
+    public function __construct(AnnotationManager $annotationManager, DataProtectionOfficer $dataProtectionOfficer, $subscribeToDoctrine=false)
     {
+        $this->annotationManager = $annotationManager;
         $this->dataProtectionOfficer = $dataProtectionOfficer;
         $this->subscribeToDoctrine = $subscribeToDoctrine;
     }
@@ -36,14 +39,26 @@ class DoctrineSubscriber implements EventSubscriber
     public function postLoad(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
-        // check if has PersonnalData
-        $this->dataProtectionOfficer->expose($entity);
+        if($this->annotationManager->hasPersonnalData(ClassUtils::getClass($entity)))
+        {
+            if($this->dataProtectionOfficer->isProcessContext)
+            {
+                $this->dataProtectionOfficer->process($entity);
+            }
+            if($this->dataProtectionOfficer->isRequestContext)
+            {
+                $this->dataProtectionOfficer->expose($entity);
+            }
+        }
     }
 
     public function postPersist(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
-        $this->dataProtectionOfficer->collect($entity);
+        if($this->annotationManager->hasPersonnalData(ClassUtils::getClass($entity)))
+        {
+            $this->dataProtectionOfficer->collect($entity);
+        }
     }
 
     public function postRemove(LifecycleEventArgs $args): void
@@ -53,13 +68,28 @@ class DoctrineSubscriber implements EventSubscriber
 
     public function postUpdate(LifecycleEventArgs $args): void
     {
-        // TODO: check if personnal data is updated
-        // /* @var $em Doctrine\ORM\EntityManager */
-        // $em = $args->getObjectManager();
-        // $uow = $em->getUnitOfWork();
-        // $uow->getEntityChangeSet($entity)
         $entity = $args->getObject();
-        $this->dataProtectionOfficer->collect($entity);
-
+        if ($this->annotationManager->hasPersonnalData(ClassUtils::getClass($entity))) 
+        {
+            /* @var $em Doctrine\ORM\EntityManager */
+            $em = $args->getObjectManager();
+            $uow = $em->getUnitOfWork();
+            $tmpObject = new DoctrineObject($this->entityManager, ClassUtils::getClass($entity));
+            $newData = $tmpObject->extract($entity);
+            $originalData = $uow->getOriginalEntityData($entity);
+            $changes = array_diff_assoc($newData, $originalData);
+            $collected = false;
+            foreach($changes as $field => $value)
+            {
+                if($this->annotationManager->isPersonnalData(ClassUtils::getClass($entity), $field))
+                {
+                    $collected = true;
+                }
+            }
+            if($collected)
+            {
+                $this->dataProtectionOfficer->collect($entity);
+            }
+        }
     }
 }
