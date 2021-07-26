@@ -1,0 +1,22 @@
+{
+  "name": "ocd/personnal-data-bundle",
+  "type": "symfony-bundle",
+  "description": "PersonnalData Bundle",
+  "keywords": ["user"],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "-",
+      "email": "-@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.4",
+    "doctrine/orm": "^2.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Ocd\\PersonnalDataBundle\\": "src/PersonnalDataBundle"
+    }
+  }
+}
