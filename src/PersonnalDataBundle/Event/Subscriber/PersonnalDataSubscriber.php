@@ -2,7 +2,6 @@
 
 namespace Ocd\PersonnalDataBundle\Event\Subscriber;
 
-use Doctrine\Common\EventSubscriber;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataProcess;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataProvider;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataRegister;
@@ -15,8 +14,9 @@ use Ocd\PersonnalDataBundle\Event\ExposePersonnalDataEvent;
 use Ocd\PersonnalDataBundle\Event\FinalArchivePersonnalDataEvent;
 use Ocd\PersonnalDataBundle\Event\IntermediateArchivePersonnalDataEvent;
 use Ocd\PersonnalDataBundle\Service\DataProtectionOfficer;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-class PersonnalDataSubscriber implements EventSubscriber
+class PersonnalDataSubscriber implements EventSubscriberInterface
 {
     private DataProtectionOfficer $dataProtectionOfficer;
 
@@ -26,7 +26,7 @@ class PersonnalDataSubscriber implements EventSubscriber
         $this->annotationManager = $annotationManager;
     }
 
-    public function getSubscribedEvents(): array
+    static public function getSubscribedEvents(): array
     {
         return [
             CollectPersonnalDataEvent::class => 'collectPersonnalData',

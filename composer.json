@@ -1,5 +1,5 @@
 {
-  "name": "ocd/personnal-data-bundle",
+  "name": "o-c-d/personnal-data-bundle",
   "type": "symfony-bundle",
   "description": "PersonnalData Bundle",
   "keywords": ["user"],

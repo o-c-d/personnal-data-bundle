@@ -2,6 +2,7 @@
 
 namespace Ocd\PersonnalDataBundle\Service;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Ocd\PersonnalDataBundle\Annotation\AnnotationManager;
 use Ocd\PersonnalDataBundle\Annotation\PersonnalDataReceipt;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataConsent;
@@ -9,7 +10,11 @@ use Ocd\PersonnalDataBundle\Entity\PersonnalDataProcess;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataProvider;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataRegister;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataTransport;
+use Ocd\PersonnalDataBundle\Manager\PersonnalDataProcessManager;
+use Ocd\PersonnalDataBundle\Manager\PersonnalDataProviderManager;
+use Ocd\PersonnalDataBundle\Manager\PersonnalDataRegisterManager;
 use Symfony\Component\PropertyAccess\PropertyAccess;
+use Symfony\Component\PropertyAccess\PropertyAccessor;
 
 class DataProtectionOfficer
 {
@@ -31,7 +36,7 @@ class DataProtectionOfficer
     private PersonnalDataProcessManager $personnalDataProcessManager;
     private PersonnalDataProviderManager $personnalDataProviderManager;
     private PersonnalDataRegisterManager $personnalDataRegisterManager;
-    private PropertyAccess $propertyAccessor;
+    private PropertyAccessor $propertyAccessor;
 
 
     public function __construct(

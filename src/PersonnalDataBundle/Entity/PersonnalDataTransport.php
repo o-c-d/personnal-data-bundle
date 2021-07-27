@@ -95,8 +95,8 @@ class PersonnalDataTransport
     /**
      * personnalDataProvider responsible for transport
      *
-     * @ManyToOne(targetEntity="PersonnalDataProvider", inversedBy="transports")
-     * @JoinColumn(name="personnal_data_provider_id", referencedColumnName="id")
+     * @ORM\ManyToOne(targetEntity="PersonnalDataProvider", inversedBy="transports")
+     * @ORM\JoinColumn(name="personnal_data_provider_id", referencedColumnName="id")
      * @var PersonnalDataProvider
      */
     protected $personnalDataProvider;

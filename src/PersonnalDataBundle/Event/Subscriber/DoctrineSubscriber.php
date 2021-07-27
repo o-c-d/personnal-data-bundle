@@ -2,13 +2,13 @@
 
 namespace Ocd\PersonnalDataBundle\Event\Subscriber;
 
-use Doctrine\Common\EventSubscriber;
 use Doctrine\ORM\Events;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Ocd\PersonnalDataBundle\Annotation\AnnotationManager;
 use Ocd\PersonnalDataBundle\Service\DataProtectionOfficer;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-class DoctrineSubscriber implements EventSubscriber
+class DoctrineSubscriber implements EventSubscriberInterface
 {
 
     private AnnotationManager $annotationManager;
@@ -22,12 +22,8 @@ class DoctrineSubscriber implements EventSubscriber
         $this->subscribeToDoctrine = $subscribeToDoctrine;
     }
 
-    public function getSubscribedEvents(): array
+    static public function getSubscribedEvents(): array
     {
-        if(!$this->subscribeToDoctrine)
-        {
-            return [];
-        }
         return [
             Events::postLoad,
             Events::postPersist,
@@ -38,6 +34,9 @@ class DoctrineSubscriber implements EventSubscriber
 
     public function postLoad(LifecycleEventArgs $args): void
     {
+        if (!$this->subscribeToDoctrine) {
+            return ;
+        }
         $entity = $args->getObject();
         if($this->annotationManager->hasPersonnalData(ClassUtils::getClass($entity)))
         {
@@ -54,6 +53,9 @@ class DoctrineSubscriber implements EventSubscriber
 
     public function postPersist(LifecycleEventArgs $args): void
     {
+        if (!$this->subscribeToDoctrine) {
+            return ;
+        }
         $entity = $args->getObject();
         if($this->annotationManager->hasPersonnalData(ClassUtils::getClass($entity)))
         {
@@ -68,6 +70,9 @@ class DoctrineSubscriber implements EventSubscriber
 
     public function postUpdate(LifecycleEventArgs $args): void
     {
+        if (!$this->subscribeToDoctrine) {
+            return ;
+        }
         $entity = $args->getObject();
         if ($this->annotationManager->hasPersonnalData(ClassUtils::getClass($entity))) 
         {

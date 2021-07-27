@@ -37,7 +37,7 @@ class PersonnalData
     /**
      * Category for Personnal Data
      * should belong to SELF::CATEGORIES
-     * @Enum({"IDENTITY", "PERSONNAL", "WORKING", "ECONOMIC", "LOCATION"; "JUDICIAL", "SENSITIVE"})
+     * @Enum({"IDENTITY", "PERSONNAL", "WORKING", "ECONOMIC", "LOCATION", "JUDICIAL", "SENSITIVE"})
      */
     public $category;
 

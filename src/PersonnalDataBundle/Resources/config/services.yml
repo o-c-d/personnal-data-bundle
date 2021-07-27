@@ -2,14 +2,14 @@ parameters:
     subscribe_to_doctrine: false
     doctrine_declare_transports: false
 services:
-     Ocd\PersonnalDataBundle\Annotation\AnnotationDiscovery:
+    Ocd\PersonnalDataBundle\Annotation\AnnotationDiscovery:
         class: Ocd\PersonnalDataBundle\Annotation\AnnotationDiscovery
-        arguments: ['@doctrine.orm.entity_manager', "@annotation_reader"]
+        arguments: ['@doctrine.orm.entity_manager', '@annotation_reader']
     Ocd\PersonnalDataBundle\Annotation\AnnotationManager:
         class: Ocd\PersonnalDataBundle\Annotation\AnnotationManager
-        arguments: ["@Ocd\PersonnalDataBundle\Annotation\AnnotationDiscovery"]
-    Ocd\PersonnalDataBundle\Services\DataProtectionOfficer:
-        class: Ocd\PersonnalDataBundle\Services\DataProtectionOfficer
+        arguments: ['@Ocd\PersonnalDataBundle\Annotation\AnnotationDiscovery']
+    Ocd\PersonnalDataBundle\Service\DataProtectionOfficer:
+        class: Ocd\PersonnalDataBundle\Service\DataProtectionOfficer
         arguments:
             - '%ocd_personnal_data.subscribe_to_doctrine%'
             - '%ocd_personnal_data.doctrine_declare_transports%'
@@ -26,7 +26,7 @@ services:
         arguments: ['@doctrine.orm.entity_manager']
     Ocd\PersonnalDataBundle\Manager\PersonnalDataRegisterManager:
         class: Ocd\PersonnalDataBundle\Manager\PersonnalDataRegisterManager
-        arguments: ['@doctrine.orm.entity_manager', '@Ocd\PersonnalDataBundle\Annotation\AnnotationManager']
+        arguments: ['@Ocd\PersonnalDataBundle\Annotation\AnnotationManager', '@doctrine.orm.entity_manager', '@Ocd\PersonnalDataBundle\Annotation\AnnotationManager']
 
     Ocd\PersonnalDataBundle\Command\PersonnalDataListCommand:
         class: Ocd\PersonnalDataBundle\Command\PersonnalDataListCommand
@@ -37,16 +37,16 @@ services:
 
     Ocd\PersonnalDataBundle\Event\Subscriber\DoctrineSubscriber:
         class: Ocd\PersonnalDataBundle\Event\Subscriber\DoctrineSubscriber
-        arguments: ['@Ocd\PersonnalDataBundle\Services\DataProtectionOfficer', '%ocd_personnal_data.subscribe_to_doctrine%']
+        arguments: ['@Ocd\PersonnalDataBundle\Service\DataProtectionOfficer', '%ocd_personnal_data.subscribe_to_doctrine%']
         tags:
           - { name: kernel.event_subscriber }        
     Ocd\PersonnalDataBundle\Event\Subscriber\PersonnalDataSubscriber:
         class: Ocd\PersonnalDataBundle\Event\Subscriber\PersonnalDataSubscriber
-        arguments: ['@Ocd\PersonnalDataBundle\Services\DataProtectionOfficer']
+        arguments: ['@Ocd\PersonnalDataBundle\Service\DataProtectionOfficer']
         tags:
           - { name: kernel.event_subscriber }        
     Ocd\PersonnalDataBundle\Event\Subscriber\SymfonySubscriber:
         class: Ocd\PersonnalDataBundle\Event\Subscriber\SymfonySubscriber
-        arguments: ['@Ocd\PersonnalDataBundle\Services\DataProtectionOfficer']
+        arguments: ['@Ocd\PersonnalDataBundle\Service\DataProtectionOfficer']
         tags:
           - { name: kernel.event_subscriber }        

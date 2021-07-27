@@ -13,7 +13,7 @@ class Configuration implements ConfigurationInterface
 
         $treeBuilder->getRootNode()
             ->children()
-                ->booleanNode('doctrine_declare_transports')->defaultValue(false)->end()
+                ->booleanNode('subscribe_to_doctrine')->defaultValue(false)->end()
                 ->booleanNode('doctrine_declare_transports')->defaultValue(false)->end()
             ->end()
         ;

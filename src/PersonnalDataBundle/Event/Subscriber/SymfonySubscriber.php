@@ -2,10 +2,14 @@
 
 namespace Ocd\PersonnalDataBundle\Event\Subscriber;
 
+use Ocd\PersonnalDataBundle\Service\DataProtectionOfficer;
+use Symfony\Component\Console\Event\ConsoleCommandEvent;
 use Symfony\Component\Console\Event\ConsoleTerminateEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
-
+use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Component\Console\ConsoleEvents;
 
 class SymfonySubscriber implements EventSubscriberInterface
 {
@@ -16,7 +20,7 @@ class SymfonySubscriber implements EventSubscriberInterface
         $this->dataProtectionOfficer = $dataProtectionOfficer;
     }
 
-    public function getSubscribedEvents(): array
+    static public function getSubscribedEvents(): array
     {
         return [
             KernelEvents::REQUEST => 'kernelRequested',
