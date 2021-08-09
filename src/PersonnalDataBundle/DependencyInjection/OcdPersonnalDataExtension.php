@@ -17,7 +17,10 @@ class OcdPersonnalDataExtension extends Extension
         $configuration = $this->getConfiguration($configs, $container);
         $config = $this->processConfiguration($configuration, $configs);
 
+        $container->setParameter('ocd_personnal_data.debug_backtrace', $config['debug_backtrace']);
         $container->setParameter('ocd_personnal_data.subscribe_to_doctrine', $config['subscribe_to_doctrine']);
         $container->setParameter('ocd_personnal_data.doctrine_declare_transports', $config['doctrine_declare_transports']);
+        $container->setParameter('ocd_personnal_data.annotation_cache_duration', $config['annotation_cache_duration']);
+        $container->setParameter('ocd_personnal_data.dpo_personnality', $config['dpo_personnality']);
     }
 }

@@ -11,14 +11,14 @@ use Doctrine\Common\Annotations\Annotation;
  */
 class PersonnalData
 {
-    const CATEGORIES = ['identity', 'personnal', 'working', 'business', 'location', 'judicial', 'sensitive' ];
-    const IDENTITY = 'identity';
-    const PERSONNAL = 'personnal';
-    const WORKING = 'working';
-    const BUSINESS = 'business';
-    const LOCATION = 'location';
-    const JUDICIAL = 'judicial';
-    const SENSITIVE = 'sensitive';
+    const CATEGORIES = [SELF::IDENTITY, SELF::PERSONNAL, SELF::WORKING, SELF::BUSINESS, SELF::LOCATION, SELF::JUDICIAL, SELF::SENSITIVE ];
+    const IDENTITY = 'IDENTITY'; // Name, email, passwords...
+    const PERSONNAL = 'PERSONNAL'; // married/single, hobbies...
+    const WORKING = 'WORKING'; // professionnal context, company name, responsabilities...
+    const BUSINESS = 'BUSINESS'; // salary, and economic datas...
+    const LOCATION = 'LOCATION'; // address, country, IP, gps coordinates...
+    const JUDICIAL = 'JUDICIAL'; // judicial records, sentences, citations...
+    const SENSITIVE = 'SENSITIVE'; // sexual orientation, political conviction...
 
     /**
      * Unique name for Personnal Data
@@ -38,6 +38,7 @@ class PersonnalData
      * Category for Personnal Data
      * should belong to SELF::CATEGORIES
      * @Enum({"IDENTITY", "PERSONNAL", "WORKING", "ECONOMIC", "LOCATION", "JUDICIAL", "SENSITIVE"})
+     * 
      */
     public $category;
 
@@ -47,6 +48,13 @@ class PersonnalData
      */
     public $purpose;
 
+
+    /**
+     * This entity can be a PersonnalDataProvider
+     *
+     * @var bool
+     */
+    public $isPersonnalDataProviderActivityDateTime=false;
 
 
 
@@ -59,42 +67,22 @@ class PersonnalData
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
-
-    /**
-     * Field being not null when entity is intermediate archived
-     * @Required
-     *
-     * @var string
-     */
-    public $intermediateArchivedBy;
-
-    /**
-     * Field being not null when entity is final archived
-     *
-     * @var string
-     */
-    public $finalArchivedBy;
-
     /**
      * Method used for archiving
-     * @Required
      *
      * @var string
      */
-    public $intermediateArchivingMethod;
+    public $intermediateArchivingMethod="Ocd\PersonnalDataBundle\Archiver\Lazy::return";
 
     /**
      * Method used for anonymizaiton
-     * @Required
      *
      * @var string
      */
-    public $finalArchivingMethod;
+    public $finalArchivingMethod="Ocd\PersonnalDataBundle\Archiver\Lazy::return";
 
     /**
      * Callable functions after archiving
-     * @Required
      *
      * @var string
      */
@@ -102,7 +90,6 @@ class PersonnalData
 
     /**
      * Callable functions after anonymizaiton
-     * @Required
      *
      * @var string
      */
@@ -115,7 +102,7 @@ class PersonnalData
      */
     public $activeConservationDuration;
 
-    /**
+    /**+
      * @Required
      *
      * @var string
@@ -124,6 +111,7 @@ class PersonnalData
 
     /**
      * Field Name of the DateTime field from which to start conservation duration in active database
+     * @Required
      * 
      *
      * @var string
@@ -132,6 +120,7 @@ class PersonnalData
 
     /**
      * Field Name of the DateTime field from which to start conservation duration in intermediate archive mode
+     * @Required
      * 
      *
      * @var string

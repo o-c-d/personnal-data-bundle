@@ -9,7 +9,13 @@ use Ocd\PersonnalDataBundle\Repository\PersonnalDataRegisterRepository;
 
 /**
  * @ORM\Entity(repositoryClass=PersonnalDataRegisterRepository::class)
- * @ORM\Table(name="personnal_data_register")
+ * @ORM\Table(name="personnal_data_register",
+ * indexes={
+ *     @ORM\Index(name="personnal_data_register_entity_name_entity_id", columns={"entity_name", "entity_id", "field_name"}),
+ *  }, uniqueConstraints={
+ *     @ORM\UniqueConstraint(name="personnal_data_register_unique_register_entity_field", columns={"entity_name", "entity_id", "field_name"})
+ *  }
+ * )
  * @ORM\HasLifecycleCallbacks
  */
 class PersonnalDataRegister
@@ -46,20 +52,29 @@ class PersonnalDataRegister
     /**
      * List of transports for this personnal data
      *
-     * @ORM\OneToMany(targetEntity="PersonnalDataTransport", mappedBy="personnalDatas")
+     * @ORM\ManyToMany(targetEntity="PersonnalDataTransport", mappedBy="personnalDatas")
      * @var PersonnalDataTransport[]
      */
     protected $transports;
 
     /**
+     * List of transports for this personnal data
+     *
+     * @ORM\ManyToMany(targetEntity="PersonnalDataProcess", mappedBy="personnalDatas")
+     * @var PersonnalDataProcess[]
+     */
+    protected $processes;
+
+    /**
      * Consents given for this personnal data
      *
-     * @ORM\OneToMany(targetEntity="PersonnalDataConsent", mappedBy="personnalDatas")
+     * @ORM\ManyToMany(targetEntity="PersonnalDataConsent", mappedBy="personnalDatas")
      * @var PersonnalDataConsent[]
      */
     protected $consents;
 
     /**
+     * The personnal data intermediate archving DateTime
      * @var ?DateTime
      *
      * @ORM\Column(name="intermediate_archived_at", type="datetime", nullable=true)
@@ -67,6 +82,7 @@ class PersonnalDataRegister
     private $intermediateArchivedAt;
 
     /**
+     * The personnal data final archving DateTime
      * @var ?DateTime
      *
      * @ORM\Column(name="final_archived_at", type="datetime", nullable=true)
@@ -74,6 +90,15 @@ class PersonnalDataRegister
     private $finalArchivedAt;
 
     /**
+     * The corresponding entity's deletion DateTime
+     * @var ?DateTime
+     *
+     * @ORM\Column(name="has_been_deleted_at", type="datetime", nullable=true)
+     */
+    private $hasBeenDeletedAt;
+
+    /**
+     * PersonnalDataRegister creation's DateTime
      * @var DateTime
      *
      * @ORM\Column(name="created_at", type="datetime")
@@ -81,6 +106,7 @@ class PersonnalDataRegister
     private $createdAt;
 
     /**
+     * PersonnalDataRegister last update DateTime
      * @var ?DateTime
      *
      * @ORM\Column(name="updated_at", type="datetime", nullable=true)

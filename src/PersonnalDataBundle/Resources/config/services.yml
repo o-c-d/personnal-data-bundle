@@ -1,10 +1,11 @@
-parameters:
-    subscribe_to_doctrine: false
-    doctrine_declare_transports: false
+# parameters:
+#     subscribe_to_doctrine: false
+#     doctrine_declare_transports: false
 services:
+    # Services
     Ocd\PersonnalDataBundle\Annotation\AnnotationDiscovery:
         class: Ocd\PersonnalDataBundle\Annotation\AnnotationDiscovery
-        arguments: ['@doctrine.orm.entity_manager', '@annotation_reader']
+        arguments: ['@doctrine.orm.entity_manager', '@annotation_reader', '@cache.app', '%ocd_personnal_data.annotation_cache_duration%']
     Ocd\PersonnalDataBundle\Annotation\AnnotationManager:
         class: Ocd\PersonnalDataBundle\Annotation\AnnotationManager
         arguments: ['@Ocd\PersonnalDataBundle\Annotation\AnnotationDiscovery']
@@ -18,35 +19,84 @@ services:
             - '@Ocd\PersonnalDataBundle\Manager\PersonnalDataProcessManager'
             - '@Ocd\PersonnalDataBundle\Manager\PersonnalDataProviderManager'
             - '@Ocd\PersonnalDataBundle\Manager\PersonnalDataRegisterManager'
+
+    # Manager
     Ocd\PersonnalDataBundle\Manager\PersonnalDataProcessManager:
         class: Ocd\PersonnalDataBundle\Manager\PersonnalDataProcessManager
+        arguments: ['@doctrine.orm.entity_manager', '@Ocd\PersonnalDataBundle\Manager\PersonnalDataProcessTypeManager', '@Ocd\PersonnalDataBundle\Manager\PersonnalDataRegisterManager']
+    Ocd\PersonnalDataBundle\Manager\PersonnalDataProcessTypeManager:
+        class: Ocd\PersonnalDataBundle\Manager\PersonnalDataProcessTypeManager
         arguments: ['@doctrine.orm.entity_manager']
     Ocd\PersonnalDataBundle\Manager\PersonnalDataProviderManager:
         class: Ocd\PersonnalDataBundle\Manager\PersonnalDataProviderManager
         arguments: ['@doctrine.orm.entity_manager']
     Ocd\PersonnalDataBundle\Manager\PersonnalDataRegisterManager:
         class: Ocd\PersonnalDataBundle\Manager\PersonnalDataRegisterManager
-        arguments: ['@Ocd\PersonnalDataBundle\Annotation\AnnotationManager', '@doctrine.orm.entity_manager', '@Ocd\PersonnalDataBundle\Annotation\AnnotationManager']
+        arguments: ['@Ocd\PersonnalDataBundle\Annotation\AnnotationManager', '@doctrine.orm.entity_manager']
 
+    # Repository
+    Ocd\PersonnalDataBundle\Repository\PersonnalDataProcessRepository:
+        class: Ocd\PersonnalDataBundle\Repository\PersonnalDataProcessRepository
+        arguments: ['@Doctrine\Common\Persistence\ManagerRegistry']
+        tags:
+            - { name: 'doctrine.repository_service' }
+    Ocd\PersonnalDataBundle\Repository\PersonnalDataProcessTypeRepository:
+        class: Ocd\PersonnalDataBundle\Repository\PersonnalDataProcessTypeRepository
+        arguments: ['@Doctrine\Common\Persistence\ManagerRegistry']
+        tags:
+            - { name: 'doctrine.repository_service' }
+    Ocd\PersonnalDataBundle\Repository\PersonnalDataRegisterRepository:
+        class: Ocd\PersonnalDataBundle\Repository\PersonnalDataRegisterRepository
+        arguments: ['@Doctrine\Common\Persistence\ManagerRegistry']
+        tags:
+            - { name: 'doctrine.repository_service' }
+
+    # Command
     Ocd\PersonnalDataBundle\Command\PersonnalDataListCommand:
         class: Ocd\PersonnalDataBundle\Command\PersonnalDataListCommand
         arguments: ['@Ocd\PersonnalDataBundle\Annotation\AnnotationManager', '@doctrine.orm.entity_manager']
         tags:
             - { name: 'console.command', command: 'ocd:personnal-data:list' }
         public: true
-
-    Ocd\PersonnalDataBundle\Event\Subscriber\DoctrineSubscriber:
-        class: Ocd\PersonnalDataBundle\Event\Subscriber\DoctrineSubscriber
-        arguments: ['@Ocd\PersonnalDataBundle\Service\DataProtectionOfficer', '%ocd_personnal_data.subscribe_to_doctrine%']
+    Ocd\PersonnalDataBundle\Command\PersonnalDataInitializeCommand:
+        class: Ocd\PersonnalDataBundle\Command\PersonnalDataInitializeCommand
+        arguments: ['@Ocd\PersonnalDataBundle\Annotation\AnnotationManager', '@doctrine.orm.entity_manager', '@Ocd\PersonnalDataBundle\Service\DataProtectionOfficer']
         tags:
-          - { name: kernel.event_subscriber }        
+            - { name: 'console.command', command: 'ocd:personnal-data:initialize' }
+        public: true
+
+    # EventSubscriber
     Ocd\PersonnalDataBundle\Event\Subscriber\PersonnalDataSubscriber:
         class: Ocd\PersonnalDataBundle\Event\Subscriber\PersonnalDataSubscriber
-        arguments: ['@Ocd\PersonnalDataBundle\Service\DataProtectionOfficer']
+        arguments: ['@Ocd\PersonnalDataBundle\Service\DataProtectionOfficer', '@Ocd\PersonnalDataBundle\Annotation\AnnotationManager']
         tags:
-          - { name: kernel.event_subscriber }        
+          - { name: kernel.event_subscriber, priority: 1 }
+    Ocd\PersonnalDataBundle\Event\Subscriber\DoctrineSubscriber:
+        class: Ocd\PersonnalDataBundle\Event\Subscriber\DoctrineSubscriber
+        arguments: ['@event_dispatcher', '%kernel.environment%', '%ocd_personnal_data.subscribe_to_doctrine%', '%ocd_personnal_data.debug_backtrace%']
+        tags:
+          - { name: doctrine.event_subscriber, priority: 1 }        
+    Ocd\PersonnalDataBundle\Event\Subscriber\SecuritySubscriber:
+        class: Ocd\PersonnalDataBundle\Event\Subscriber\SecuritySubscriber
+        arguments: ['@Ocd\PersonnalDataBundle\Service\DataProtectionOfficer', '@Ocd\PersonnalDataBundle\Manager\PersonnalDataProcessManager', '@event_dispatcher']
+        tags:
+          - { name: kernel.event_subscriber, priority: 1 }        
     Ocd\PersonnalDataBundle\Event\Subscriber\SymfonySubscriber:
         class: Ocd\PersonnalDataBundle\Event\Subscriber\SymfonySubscriber
+        arguments: ['@Ocd\PersonnalDataBundle\Service\DataProtectionOfficer', '@Ocd\PersonnalDataBundle\Manager\PersonnalDataProcessManager', '@event_dispatcher', '@security.helper']
+        tags:
+          - { name: kernel.event_subscriber, priority: 1 }
+          - { name: console.event_subscriber, priority: 1 }
+
+    # DataCollector
+    Ocd\PersonnalDataBundle\DataCollector\PersonnalDataCollector:
+        class: Ocd\PersonnalDataBundle\DataCollector\PersonnalDataCollector
         arguments: ['@Ocd\PersonnalDataBundle\Service\DataProtectionOfficer']
         tags:
-          - { name: kernel.event_subscriber }        
+          - { name: data_collector, template: "@OcdPersonnalData/DataCollector/template", priority: 300}
+
+    # Twig
+    Ocd\PersonnalDataBundle\Twig\PersonnalDataCollectionsExtension:
+        class: Ocd\PersonnalDataBundle\Twig\PersonnalDataCollectionsExtension
+        tags:
+          - { name: twig.extension}

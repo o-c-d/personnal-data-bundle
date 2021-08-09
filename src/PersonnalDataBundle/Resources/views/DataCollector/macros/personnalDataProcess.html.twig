@@ -1,0 +1,30 @@
+{% macro table(collection) %}
+<table>
+    <thead>
+        <tr>
+            <th>Entity</th>
+            <th>Id</th>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Comment</th>
+            <th>Creation</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for process in collection %}
+        {% for personnalData in process.personnalDatas %}
+            <tr>
+                <td>{{ personnalData.entityName }}</td>
+                <td>{{ personnalData.entityId }}</td>
+                <td>{{ personnalData.fieldName }}</td>
+                <td>{{ process.personnalDataProcessType.constantCode }}</td>
+                <td>{{ process.personnalDataProcessType.description }}</td>
+                <td>{{ process.comment }}</td>
+                <td>{{ process.createdAt|date('d/m/Y-H:i:s') }}</td>
+            </tr>        
+        {% endfor %}
+    {% endfor %}
+    </tbody>
+</table>
+{% endmacro %}

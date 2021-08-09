@@ -20,9 +20,6 @@ class PersonnalDataListCommand extends Command
 
     public function __construct(AnnotationManager $manager, EntityManager $entityManager)
     {
-        // best practices recommend to call the parent constructor first and
-        // then set your own properties. That wouldn't work in this case
-        // because configure() needs the properties set in this constructor
         $this->manager = $manager;
         $this->entityManager = $entityManager;
 

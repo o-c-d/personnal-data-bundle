@@ -29,15 +29,16 @@ class PersonnalDataRegisterManager
     {
         $personnalDatas = [];
         $entityName = ClassUtils::getClass($entity);
-        $entityId = $entity->getId();
+        // $entityId = $entity->getId();
         $personnalDataAnnotations = $this->annotationManager->getPersonnalDataFromEntity($entity);
-        // TODO: check if entity has annotation
+        // TODOs: check if entity has annotation
         // $personnalDataReceiptAnnotation = $personnalDataAnnotations['annotation'];
-        if(isset($personnalDataAnnotations['fields']))
-        {
-            foreach($personnalDataAnnotations['fields'] as $fieldName => $fieldData)
+
+        $fields = $this->em->getClassMetadata($entityName)->getColumnNames();
+        foreach ($fields as $fieldName) {
+            if($this->annotationManager->isPersonnalData($entityName, $fieldName))
             {
-                $personnalDatas[] = $this->makePersonnalDataFromEntity($entity, $fieldName);
+                $personnalDatas[] = $this->makePersonnalDataRegisterFromEntity($entity, $fieldName);
             }
         }
         return $personnalDatas;
@@ -45,7 +46,7 @@ class PersonnalDataRegisterManager
 
     public function makePersonnalDataRegisterFromEntity($entity, $fieldName): ?PersonnalDataRegister
     {
-        // check if this field is desclared as personnal data annotation
+        // check if this field is declared as personnal data annotation
         if(!$this->annotationManager->isPersonnalData(ClassUtils::getClass($entity), $fieldName))
         {
             return null;

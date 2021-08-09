@@ -1,0 +1,31 @@
+{% macro table(collection) %}
+{# Work In Progress / Do not use #}
+<table>
+    <thead>
+        <tr>
+            <th>Entity</th>
+            <th>Id</th>
+            <th>Field</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Comment</th>
+            <th>Creation</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for transport in collection %}
+        {% for personnalData in transport.personnalDatas %}
+            <tr>
+                <td>{{ personnalData.entityName }}</td>
+                <td>{{ personnalData.entityId }}</td>
+                <td>{{ personnalData.fieldName }}</td>
+                <td>{{ transport.personnalDataProcessType.constantCode }}</td>
+                <td>{{ transport.personnalDataProcessType.description }}</td>
+                <td>{{ transport.comment }}</td>
+                <td>{{ transport.createdAt|date('d/m/Y-H:i:s') }}</td>
+            </tr>        
+        {% endfor %}
+    {% endfor %}
+    </tbody>
+</table>
+{% endmacro %}

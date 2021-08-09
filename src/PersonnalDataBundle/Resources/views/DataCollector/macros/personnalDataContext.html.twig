@@ -1,0 +1,38 @@
+{% macro table(collection) %}
+        <table style="width: 100%;">
+            <thead>
+                <tr>
+                    <th>Entity</th>
+                    <th>Id</th>
+                    <th>Field</th>
+                    <th>Context</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entityName, entity in collection %}
+                {% for entityId, fields in entity %}
+                {% for fieldName, contexts in fields %}
+                {% for context in contexts %}
+                <tr>
+                    <td>{{entityName}}</td>
+                    <td>{{entityId}}</td>
+                    <td>{{fieldName}}</td>
+                    <td>
+                        <ul style="max-height:8em;overflow:scroll;">
+                            {% for line in context %}
+                            <li>
+                                {% if line.class is defined %}{{line.class}}{{line.type}}{% endif %}{{line.function}} <br />AT
+                                {{line.file}} ({{line.line}})
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% endfor %}
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+
+{% endmacro %}

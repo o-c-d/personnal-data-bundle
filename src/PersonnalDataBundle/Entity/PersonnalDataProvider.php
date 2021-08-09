@@ -8,7 +8,13 @@ use Ocd\PersonnalDataBundle\Repository\PersonnalDataProviderRepository;
 
 /**
  * @ORM\Entity(repositoryClass=PersonnalDataProviderRepository::class)
- * @ORM\Table(name="personnal_data_provider")
+ * @ORM\Table(name="personnal_data_provider",
+ * indexes={
+ *     @ORM\Index(name="personnal_data_provider_entity_name_entity_id", columns={"entity_name", "entity_id"}),
+ *  }, uniqueConstraints={
+ *     @ORM\UniqueConstraint(name="personnal_data_provider_unique_provider_entity", columns={"entity_name", "entity_id"})
+ *  }
+ * )
  * @ORM\HasLifecycleCallbacks
  */
 class PersonnalDataProvider
@@ -69,14 +75,14 @@ class PersonnalDataProvider
      */
     private $updatedAt;
 
-     public function __construct()
-     {
-         $this->transports = new ArrayCollection();
-     }
+    public function __construct()
+    {
+        $this->transports = new ArrayCollection();
+    }
 
     /**
      * Get the value of id
-     */ 
+     */
     public function getId()
     {
         return $this->id;
@@ -84,7 +90,7 @@ class PersonnalDataProvider
 
     /**
      * Get the provider description.
-     */ 
+     */
     public function getDescription()
     {
         return $this->description;
@@ -94,7 +100,7 @@ class PersonnalDataProvider
      * Set the provider description.
      *
      * @return  self
-     */ 
+     */
     public function setDescription($description)
     {
         $this->description = $description;
@@ -104,7 +110,7 @@ class PersonnalDataProvider
 
     /**
      * Get the entity class name.
-     */ 
+     */
     public function getEntityName()
     {
         return $this->entityName;
@@ -114,7 +120,7 @@ class PersonnalDataProvider
      * Set the entity class name.
      *
      * @return  self
-     */ 
+     */
     public function setEntityName($entityName)
     {
         $this->entityName = $entityName;
@@ -124,7 +130,7 @@ class PersonnalDataProvider
 
     /**
      * Get the entity ID.
-     */ 
+     */
     public function getEntityId()
     {
         return $this->entityId;
@@ -134,7 +140,7 @@ class PersonnalDataProvider
      * Set the entity ID.
      *
      * @return  self
-     */ 
+     */
     public function setEntityId($entityId)
     {
         $this->entityId = $entityId;

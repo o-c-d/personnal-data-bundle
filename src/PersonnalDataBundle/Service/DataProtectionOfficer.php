@@ -3,13 +3,16 @@
 namespace Ocd\PersonnalDataBundle\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Common\Util\ClassUtils;
 use Ocd\PersonnalDataBundle\Annotation\AnnotationManager;
 use Ocd\PersonnalDataBundle\Annotation\PersonnalDataReceipt;
+use Ocd\PersonnalDataBundle\DataCollector\PersonnalDataCollector;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataConsent;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataProcess;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataProvider;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataRegister;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataTransport;
+use Ocd\PersonnalDataBundle\Exception\ExposedPersonnalDataException;
 use Ocd\PersonnalDataBundle\Manager\PersonnalDataProcessManager;
 use Ocd\PersonnalDataBundle\Manager\PersonnalDataProviderManager;
 use Ocd\PersonnalDataBundle\Manager\PersonnalDataRegisterManager;
@@ -26,6 +29,37 @@ class DataProtectionOfficer
      */
     private array $transports = [];
 
+    /**
+     * list of processes during whole execution
+     *
+     * @var array PersonnalDataProcess[]
+     */
+    private array $processes = [];
+
+    /**
+     * list of personnal data collected during whole execution
+     *
+     * @var array 
+     */
+    private array $collected = [];
+
+    /**
+     * list of personnal data exposed during whole execution
+     *
+     * @var array 
+     */
+    private array $exposed = [];
+
+    /**
+     * Lisdt of personnal data in transport or processes not seen in exposed or collected
+     */
+    private array $errors = [];
+
+    /**
+     * List of personnal data exposed or collected but not in transports or processes
+     */
+    private array $violations = [];
+
     private bool $subscribeToDoctrine = false;
     private bool $doctrineDeclareTransports = false;
     public bool $isRequestContext = false;
@@ -39,6 +73,7 @@ class DataProtectionOfficer
     private PropertyAccessor $propertyAccessor;
 
 
+
     public function __construct(
         bool $subscribeToDoctrine, 
         bool $doctrineDeclareTransports, 
@@ -50,6 +85,9 @@ class DataProtectionOfficer
         )
     {
         $this->transports = [];
+        $this->processes = [];
+        $this->collected = [];
+        $this->exposed = [];
         $this->subscribeToDoctrine = $subscribeToDoctrine;
         $this->doctrineDeclareTransports = $doctrineDeclareTransports;
         $this->em = $em;
@@ -60,88 +98,75 @@ class DataProtectionOfficer
         $this->propertyAccessor = PropertyAccess::createPropertyAccessor();
     }
 
-    public function getTransportByType($type)
-    {
-        if(!isset($this->transports[$type]))
-        {
-            $this->transports[$type] = new PersonnalDataTransport();
-            $this->transports[$type]->setType($type);
-        }
-        return $this->transports[$type];
-    }
-
     /**
      * An event warned us we are collecting Personnal Data
      * Initialize Transport and Provider
      *
      * @param PersonnalDataTransport $transport
-     * @param array $personnalDatas
-     * @param PersonnalDataProvider|null $source
      * @return void
      */
-    public function collectEvent(PersonnalDataTransport $transport, PersonnalDataProvider $provider, array $personnalDatas=[]): void
+    public function addTransport(PersonnalDataTransport $transport): void
     {
-        $this->updateTransport($transport, $personnalDatas, $provider);
+        $this->transports[] = $transport;
     }
 
     /**
-     * Database has stored some personnal data, add it to current collect transport
+     * A process using PersonnalData is running
      *
-     * @param [type] $entity
-     * @param PersonnalDataTransport|null $transport
-     * @param PersonnalDataProvider|null $provider
+     * @param PersonnalDataProcess $process
      * @return void
      */
-    public function collect($entity): void
+    public function addProcess(PersonnalDataProcess $process): void
     {
-        if($this->doctrineDeclareTransports)
-        {
-            $transport = $this->getTransportByType(PersonnalDataTransport::TYPE_COLLECT);
-        }
-        
-        if(isset($this->transports[PersonnalDataTransport::TYPE_COLLECT]))
-        {
-                
-            $personnalDatas = $this->annotationManager->getPersonnalDataFromEntity($entity);
-            if(null !== $personnalDatas)
-            {
-                foreach($personnalDatas['fields'] as $fieldName => $annotation)
-                {
-                    $personnalDataRegister = $this->personnalDataRegisterManager->makePersonnalDataRegisterFromEntity($entity, $fieldName);
-                    // TODO: check if value is not null or default or has been modified
-                    $transport->addPersonnalDataRegister($personnalDataRegister);
-                }
-            }
-            $this->transports[PersonnalDataTransport::TYPE_COLLECT] = $transport;
-        }
+        $this->processes[] = $process;
     }
 
-    public function exposeEvent(PersonnalDataTransport $transport, PersonnalDataProvider $provider, array $personnalDatas=[]): void
+    /**
+     * Database has stored some personnal data, add it to current collected datas
+     *
+     * @param [type] $entity
+     * @param array $context
+     * @return void
+     */
+    public function collect($entity, $context=[]): void
     {
-        // if (null === $transport) {
-        //     $transport = $this->getTransportByType(PersonnalDataTransport::TYPE_EXPOSE);
-        // }
-        $this->updateTransport($transport, $personnalDatas, $provider);
+        $personnalDatas = $this->personnalDataRegisterManager->makeAllPersonnalDataRegistersFromEntity($entity);
+        $this->collected = self::makeContextCollection($this->collected, $personnalDatas, $context);
     }
 
-    public function expose($entity): void
+
+    static public function makeContextCollection($collection, $personnalDatas, $context)
     {
-        if ($this->doctrineDeclareTransports) {
-            $transport = $this->getTransportByType(PersonnalDataTransport::TYPE_EXPOSE);
-        }
-        if(isset($this->transports[PersonnalDataTransport::TYPE_EXPOSE]))
-        {
-            $personnalDatas = $this->annotationManager->getPersonnalDataFromEntity($entity);
-            if (null !== $personnalDatas) {
-                foreach ($personnalDatas['fields'] as $fieldName => $annotation) {
-                    $personnalDataRegister = $this->personnalDataRegisterManager->makePersonnalDataRegisterFromEntity($entity, $fieldName);
-                    // TODO: check if value is not null or default
-                    $transport->addPersonnalDataRegister($personnalDataRegister);
-                }
+        foreach ($personnalDatas as $personnalData) {
+            $entityName = $personnalData->getEntityName();
+            if (!isset($collection[$entityName])) {
+                $collection[$entityName] = [];
             }
-            $transportType = $transport->getType();
-            $this->transports[$transportType] = $transport;
+            $entityId = $personnalData->getEntityId();
+            if (!isset($collection[$entityName][$entityId])) {
+                $collection[$entityName][$entityId] = [];
+            }
+            $fieldName = $personnalData->getFieldName();
+            if (!isset($collection[$entityName][$entityId][$fieldName])) {
+                $collection[$entityName][$entityId][$fieldName] = [];
+            }
+            $collection[$entityName][$entityId][$fieldName][] = $context;
         }
+        return $collection;
+    }
+
+
+    /**
+     * Database has loaded some personnal data, add it to current exposed datas
+     *
+     * @param [type] $entity
+     * @param array $context
+     * @return void
+     */
+    public function expose($entity, $context=[]): void
+    {
+        $personnalDatas = $this->personnalDataRegisterManager->makeAllPersonnalDataRegistersFromEntity($entity);
+        $this->exposed = self::makeContextCollection($this->exposed, $personnalDatas, $context);
     }
 
     public function consentEvent(PersonnalDataProvider $destination, PersonnalDataProcess $process, array $personnalDatas = [])
@@ -165,7 +190,7 @@ class DataProtectionOfficer
         // if (null === $transport) {
         //     $transport = $this->getTransportByType(PersonnalDataTransport::TYPE_EXPORT);
         // }
-        $this->updateTransport($transport, $personnalDatas, $destination);
+        // $this->updateTransport($transport, $personnalDatas, $destination);
     }
 
     public function disposeEvent(array $personnalDatas = [])
@@ -181,7 +206,7 @@ class DataProtectionOfficer
             $this->em->persist($personnalData);
         }
         $this->em->flush();
-        // revoke all consent ?
+        // expire all consent ?
     }
 
     public function finalArchiveEvent(array $personnalDatas = [])
@@ -209,7 +234,7 @@ class DataProtectionOfficer
 
     }
 
-    public function declareAllPersonnalDataInDatabase($withConsent=false): array
+    public function declareAllPersonnalDataInDatabase($withConsent=false): void
     {
         $annotations = $this->annotationManager->getAllEntitiesAnnotations();
         foreach($annotations as $entityName => $entityData)
@@ -225,12 +250,13 @@ class DataProtectionOfficer
                 }
             }
         }
+        // TODO: Check for undeclared personnal data (not linked to a provider)
+
     }
 
     public function declareAllPersonnalDataFromEntity($entity, $withConsent=false)
     {
-        $entityName = ClassUtils::getClass($entity);
-        $annotationEntity = $this->annotationManager->getPersonnalDataFromEntity($entityName);
+        $annotationEntity = $this->annotationManager->getPersonnalDataFromEntity($entity);
         /** @var PersonnalDataReceipt $personnalDataReceiptAnnotation */
         $personnalDataReceiptAnnotation = $annotationEntity['annotation'];
         if(!$personnalDataReceiptAnnotation->isPersonnalDataProvider())
@@ -238,6 +264,7 @@ class DataProtectionOfficer
             // PersonnalData can only be declared by a PersonnalDataProvider
             return;
         }
+        $entityName = ClassUtils::getClass($entity);
         $entityMetaData = $this->em->getClassMetadata($entityName);
         $entityId = $this->propertyAccessor->getValue($entity, $entityMetaData->getSingleIdentifierFieldName());
         $personnalDataProvider = $this->personnalDataProviderManager->makeProviderByEntity($entity);
@@ -338,39 +365,119 @@ class DataProtectionOfficer
         return $exportData;
     }
 
-    public function updateTransport(PersonnalDataTransport $transport, array $personnalDatas=[], ?PersonnalDataProvider $provider=null)
+    public function timeArchiver()
     {
-        /** @var PersonnalDataRegister $personnalData */
-        foreach ($personnalDatas as $personnalData) {
-            if($personnalData instanceof PersonnalDataRegister)
+        $annotations = $this->annotationManager->getAllEntitiesAnnotations();
+        foreach ($annotations as $entityName => $entityData) {
+            /** @var PersonnalDataReceipt $personnalDataReceiptAnnotation*/
+            $personnalDataReceiptAnnotation = $entityData['annotation'];
+            foreach($entityData['fields'] as $fieldName => $personnalData)
             {
-                $transport->addPersonnalData($personnalData);
+
+            }
+
+        }
+
+    }
+
+
+    public function getPersonnalDataFromDbCollection($dbCollection=[])
+    {
+        $personnalDatas = [];
+        foreach ($dbCollection as $entityName => $entity) {
+            foreach ($entity as $entityId => $fields) {
+                foreach ($fields as $field) {
+                    foreach($field as $fieldName => $context)
+                    {
+                        $personnalData = $this->em->getRepository(PersonnalDataRegister::class)->findOneBy([
+                            'entityName' => $entityName,
+                            'entityId' => $entityId,
+                            'fieldName' => $fieldName,
+                        ]);
+                        if($personnalData)
+                        {
+                            $personnalDatas[] = $personnalData;
+                        }
+                    }
+                }
             }
         }
-        if (null !== $provider) {
-            $transport->setPersonnalDataProvider($provider);
-        }
-        $transportType = $transport->getType();
-        $this->transports[$transportType] = $transport;
-
+        return $personnalDatas;
     }
 
-    public function persistTransportByType($transportType)
+    public function validation()
     {
-        if(isset($this->transports[$transportType]))
+        $personnalDataFromEvents = array_merge(
+            PersonnalDataCollector::getPersonnalDataRegitersFromEvent($this->transports),
+            PersonnalDataCollector::getPersonnalDataRegitersFromEvent($this->processes),
+        );
+        $personnalDatasFromDb = array_merge(
+            $this->getPersonnalDataFromDbCollection($this->collected),
+            $this->getPersonnalDataFromDbCollection($this->exposed),
+        );
+        foreach($personnalDatasFromDb as $personnalDataFromDb)
         {
-            $this->em->persist($this->transports[$transportType]);
+            if(
+                !isset($personnalDataFromEvents[$personnalDataFromDb->getEntityName()])
+                || !isset($personnalDataFromEvents[$personnalDataFromDb->getEntityName()][$personnalDataFromDb->getEntityId()])
+                || !isset($personnalDataFromEvents[$personnalDataFromDb->getEntityName()][$personnalDataFromDb->getEntityId()][$personnalDataFromDb->getFieldName()])
+            )
+            {
+                // Personnal Data used without declaration
+                $this->violations[] = $personnalDataFromDb;
+                // throw new ExposedPersonnalDataException($personnalData);
+            }
+        }
+        foreach ($personnalDataFromEvents as $personnalDataFromEvent) {
+            if (
+                !isset($personnalDatasFromDb[$personnalDataFromEvent->getEntityName()])
+                || !isset($personnalDatasFromDb[$personnalDataFromEvent->getEntityName()][$personnalDataFromEvent->getEntityId()])
+                || !isset($personnalDatasFromDb[$personnalDataFromEvent->getEntityName()][$personnalDataFromEvent->getEntityId()][$personnalDataFromEvent->getFieldName()])
+            ) {
+                // Personnal Data declared without usage
+                $this->errors[] = $personnalDataFromEvent;
+            }
         }
         $this->em->flush();
     }
 
-    public function persistTransports()
+    /**
+     * Get personnalDataTransport[]
+     *
+     * @return  array
+     */ 
+    public function getTransports()
     {
-        /** @var PersonnalDataTransport $transport */
-        foreach($this->transports as $type => $transport)
-        {
-            $this->em->persist($transport);
-        }
-        $this->em->flush();
+        return $this->transports;
+    }
+
+    /**
+     * Get personnalDataProcess[]
+     *
+     * @return  array
+     */ 
+    public function getProcesses()
+    {
+        return $this->processes;
+    }
+
+    /**
+     * Get personnalDataRgister[]
+     *
+     * @return  array
+     */ 
+    public function getCollected()
+    {
+        return $this->collected;
+    }
+
+    /**
+     * Get personnalDataProcess[]
+     *
+     * @return  array
+     */ 
+    public function getExposed()
+    {
+        return $this->exposed;
     }
 }

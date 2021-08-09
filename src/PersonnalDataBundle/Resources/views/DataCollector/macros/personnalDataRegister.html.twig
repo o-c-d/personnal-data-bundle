@@ -1,0 +1,22 @@
+{% macro table(collection) %}
+{# Work In Progress / Do not use #}
+<table>
+    <tr>
+        <th>Entity</th>
+        <th>Field</th>
+        <th>Id</th>
+        <th>Context</th>
+        <th>Processes</th>
+        <th>Transports</th>
+    </tr>
+    {% for register in collection %}
+    <tr>
+        <td>{{ register.entityName }}</td>
+        <td>{{ register.fieldName }}</td>
+        <td>{{ register.entityId }}</td>
+        <td>{{ register.createdAt|date('d/m/Y-H:i:s') }}</td>
+        <td>{{ register.updatedAt|date('d/m/Y-H:i:s') }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endmacro %}

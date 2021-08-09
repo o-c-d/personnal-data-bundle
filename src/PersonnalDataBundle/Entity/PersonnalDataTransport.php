@@ -4,18 +4,26 @@ namespace Ocd\PersonnalDataBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
+use Ocd\PersonnalDataBundle\Annotation\PersonnalData;
+use Ocd\PersonnalDataBundle\Annotation\PersonnalDataReceipt;
 use Ocd\PersonnalDataBundle\Repository\PersonnalDataTransportRepository;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity(repositoryClass=PersonnalDataTransportRepository::class)
- * @ORM\Table(name="personnal_data_transport")
+ * @ORM\Table(name="personnal_data_transport",
+ * indexes={
+ *     @ORM\Index(name="personnal_data_transport_personnal_data_provider_id", columns={"personnal_data_provider_id"}),
+ *  }
+ * )
+ * @PersonnalDataReceipt(name="PersonnalDataTransport", description="", cascadeTo={}, isPersonnalDataProvider=false)
  * @ORM\HasLifecycleCallbacks
  */
 class PersonnalDataTransport
 {
     const TYPE_COLLECT = "COLLECT";
     const TYPE_EXPOSE = "EXPOSE";
+    const TYPE_EXPORT = "EXPORT";
 
     /**
      * @ORM\Id
@@ -64,6 +72,14 @@ class PersonnalDataTransport
      * @var ?string
      */
     protected ?string $protocol;
+
+    /**
+     * The protocol used for transport (HTTPS/SFTP/...)
+     *
+     * @ORM\Column(name="route", type="string", nullable=true)
+     * @var ?string
+     */
+    protected ?string $route;
 
     /**
      * IP Address delivering the data
@@ -197,6 +213,30 @@ class PersonnalDataTransport
     public function setProtocol(?string $protocol)
     {
         $this->protocol = $protocol;
+
+        return $this;
+    }
+
+    /**
+     * Get the protocol used for transport (HTTPS/SFTP/...)
+     *
+     * @return  ?string
+     */ 
+    public function getRoute()
+    {
+        return $this->route;
+    }
+
+    /**
+     * Set the protocol used for transport (HTTPS/SFTP/...)
+     *
+     * @param  ?string  $route  The protocol used for transport (HTTPS/SFTP/...)
+     *
+     * @return  self
+     */ 
+    public function setRoute(?string $route)
+    {
+        $this->route = $route;
 
         return $this;
     }

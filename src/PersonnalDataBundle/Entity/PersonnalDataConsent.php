@@ -8,7 +8,10 @@ use Ocd\PersonnalDataBundle\Repository\PersonnalDataConsentRepository;
 
 /**
  * @ORM\Entity(repositoryClass=PersonnalDataConsentRepository::class)
- * @ORM\Table(name="personnal_data_transport")
+ * @ORM\Table(name="personnal_data_consent", indexes={
+ *     @ORM\Index(name="personnal_data_consent_personnal_data_provider_id", columns={"personnal_data_provider_id"}),
+ *     @ORM\Index(name="personnal_data_consent_personnal_data_process_type_id", columns={"personnal_data_process_type_id"}),
+ * })
  */
 class PersonnalDataConsent
 {
@@ -22,7 +25,7 @@ class PersonnalDataConsent
     /**
      * personnalDataProvider giving consent
      *
-     * @ORM\ManyToOne(targetEntity="PersonnalDataProvider", inversedBy="transports")
+     * @ORM\ManyToOne(targetEntity="PersonnalDataProvider", inversedBy="consents")
      * @ORM\JoinColumn(name="personnal_data_provider_id", referencedColumnName="id")
      * @var PersonnalDataProvider
      */
@@ -31,11 +34,11 @@ class PersonnalDataConsent
     /**
      * PersonnalDataProcess concerned by consent
      *
-     * @ORM\ManyToMany(targetEntity="PersonnalDataProcess", inversedBy="consents")
-     * @ORM\JoinColumn(name="personnal_data_process_id", referencedColumnName="id")
+     * @ORM\ManyToOne(targetEntity="PersonnalDataProcessType", inversedBy="consents")
+     * @ORM\JoinColumn(name="personnal_data_process_type_id", referencedColumnName="id")
      * @var PersonnalDataProcess
      */
-    protected $personnalDataProcess;
+    protected $personnalDataProcessType;
 
     /**
      * List of personnaldata concerned by consent
@@ -53,6 +56,13 @@ class PersonnalDataConsent
      * @ORM\Column(name="is_revoked", type="boolean", options={"default": false})
      */
     protected bool $isRevoked = false;
+
+    /**
+     * The consent has been expired
+     * 
+     * @ORM\Column(name="is_expired", type="boolean", options={"default": false})
+     */
+    protected bool $isExpired = false;
 
 
     /**

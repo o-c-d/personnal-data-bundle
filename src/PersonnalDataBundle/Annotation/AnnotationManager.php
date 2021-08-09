@@ -2,6 +2,8 @@
 
 namespace Ocd\PersonnalDataBundle\Annotation;
 
+use Doctrine\Common\Util\ClassUtils;
+
 class AnnotationManager
 {
     /**
@@ -20,10 +22,23 @@ class AnnotationManager
         return $this->annotations;
     }
 
-    public function getPersonnalDataFromEntity(string $entityClassPath): ?array
+    public function getPersonnalDataFromEntity($entity): ?array
     {
-        if(isset($this->annotations[$entityClassPath]) && isset($this->annotations[$entityClassPath])) {
-            return $this->annotations[$entityClassPath];
+        $entityClassPath = ClassUtils::getClass($entity);
+        return $this->getPersonnalDataFromEntityName($entityClassPath);
+    }
+
+    public function getPersonnalDataFromEntityName(string $entityClassPath): ?array
+    {
+        if(isset($this->annotations[$entityClassPath]) && isset($this->annotations[$entityClassPath]['fields'])) {
+            // TODO: rework
+            $personnalDataAnnotations = [];
+            foreach($this->annotations[$entityClassPath]['fields'] as $field)
+            {
+                $personnalDataAnnotations[] = $field['annotation'];
+
+            }
+            return $personnalDataAnnotations;
         }
         return null;
     }

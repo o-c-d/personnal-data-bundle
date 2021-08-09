@@ -17,10 +17,12 @@ Example in User Table :
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Ocd\PersonnalDataBundle\Annotation\PersonnalData;
+use Ocd\PersonnalDataBundle\Annotation\PersonnalDataReceipt;
 
 /**
  * @ORM\Entity(name="user")
- * @PersonnalDataReceipt(name="User", description="User table", cascadeTo={})
+ * @PersonnalDataReceipt(name="User", description="User table", cascadeTo={}, isPersonnalDataProvider=true)
  */
 class User
 {
