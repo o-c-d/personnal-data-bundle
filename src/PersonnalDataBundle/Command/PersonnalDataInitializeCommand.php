@@ -57,11 +57,15 @@ class PersonnalDataInitializeCommand extends Command
         $this->dpo->declareAllPersonnalDataInDatabase($withConsent);
 
         $annotations = $this->annotationManager->getAllEntitiesAnnotations();
-        $progressBar = new ProgressBar($output, count($annotations));
-        $progressBar->start();
+        $tableIndex = 0;
+        $tablesCount = count($annotations);
+        $orphans = [];
+        // $progressBar = new ProgressBar($output, $tablesCount);
+        // $progressBar->start();
         foreach ($annotations as $entityName => $entityData) {
+            $tableIndex++;
+            $io->section($entityName.' ('.$tableIndex.'/'.$tablesCount.')');
             /** @var PersonnalDataReceipt $personnalDataReceiptAnnotation*/
-            // $io->section($entityName);
             $personnalDataReceiptAnnotation = $entityData['annotation'];
             if ($personnalDataReceiptAnnotation->isPersonnalDataProvider()) {
                 $allEntityData = $this->entityManager->getRepository($entityName)->findAll();
@@ -70,14 +74,28 @@ class PersonnalDataInitializeCommand extends Command
                 $progressBar2->start();
                 foreach ($allEntityData as $index => $entity) {
                     // Todo: check if this personal data is already present in personnalDataRegister
-                    $this->dpo->declareAllPersonnalDataFromEntity($entity);
+                    $newOrphans = $this->dpo->declareAllPersonnalDataFromEntity($entity);
+                    if(null!== $newOrphans) {
+                        $orphans = array_merge($orphans, $newOrphans);
+                    }
                     $progressBar2->advance();
                 }
                 $progressBar2->finish();
             }
-            $progressBar->advance();
+            // $progressBar->advance();
         }
-        $progressBar->finish();
+        // $progressBar->finish();
+
+        // $orphans = [];
+        // Check for for entities not related to a provider
+        foreach ($orphans as $entityName => $entityData) {
+            foreach($entityData as $entityId => $fields) {
+                foreach($fields as $field) {
+                    $io->error($entityName.'#'.$entityId.' '. $field);
+                }
+            }
+        }
+
 
         return Command::SUCCESS;
     }

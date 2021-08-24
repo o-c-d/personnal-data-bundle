@@ -46,6 +46,13 @@ class PersonnalDataReceipt
     public $isPersonnalDataProvider=false;
 
 
+    /**
+     * Field not null when entity is soft-deleted
+     *
+     * @var string
+     */
+    public $softDeletedBy=null;
+
 
     /**
      * Get this entity can be a PersonnalDataProvider
@@ -149,6 +156,30 @@ class PersonnalDataReceipt
     public function setIsPersonnalDataProvider(bool $isPersonnalDataProvider)
     {
         $this->isPersonnalDataProvider = $isPersonnalDataProvider;
+
+        return $this;
+    }
+
+    /**
+     * Get field not null when entity is soft-deleted
+     *
+     * @return  string
+     */ 
+    public function getSoftDeletedBy()
+    {
+        return $this->softDeletedBy;
+    }
+
+    /**
+     * Set field not null when entity is soft-deleted
+     *
+     * @param  string  $softDeletedBy  Field not null when entity is soft-deleted
+     *
+     * @return  self
+     */ 
+    public function setSoftDeletedBy(?string $softDeletedBy=null)
+    {
+        $this->softDeletedBy = $softDeletedBy;
 
         return $this;
     }

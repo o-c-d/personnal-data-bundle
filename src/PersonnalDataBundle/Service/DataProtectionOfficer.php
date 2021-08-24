@@ -229,12 +229,12 @@ class DataProtectionOfficer
         // Check for consent ??
     }
 
-    public function hasProviderAgreedToProcess($provider, $process, $resonnalDatas=[]): bool
+    public function hasProviderAgreedToProcess($provider, $process, $personnalDatas=[]): bool
     {
 
     }
 
-    public function declareAllPersonnalDataInDatabase($withConsent=false): void
+    public function declareAllPersonnalDataInDatabase($withConsent=false): array
     {
         $annotations = $this->annotationManager->getAllEntitiesAnnotations();
         foreach($annotations as $entityName => $entityData)
@@ -251,25 +251,42 @@ class DataProtectionOfficer
             }
         }
         // TODO: Check for undeclared personnal data (not linked to a provider)
-
+        $orphans = [];
+        foreach($annotations as $entityName => $entityData)
+        {
+            $orphans[$entityName]=[];
+            $allEntityData = $this->em->getRepository($entityName)->findAll();
+                foreach ($allEntityData as $index => $entity) {
+                    // find entity in PersonnalDataRegister
+                    $declaredFields = $this->em->getRepository(PersonnalDataRegister::class)->findByEntity($entity);
+                    $orphans[$entityName][$entity->getId()]=[];
+                    foreach($entityData['fields'] as $field)
+                    {
+                        if(!in_array($field, $declaredFields)) {
+                            $orphans[$entityName][$entity->getId()][] = $field;
+                        }
+                    }
+                }
+        }
+        return $orphans;
     }
 
     public function declareAllPersonnalDataFromEntity($entity, $withConsent=false)
     {
-        $annotationEntity = $this->annotationManager->getPersonnalDataFromEntity($entity);
+        $entityName = ClassUtils::getClass($entity);
         /** @var PersonnalDataReceipt $personnalDataReceiptAnnotation */
-        $personnalDataReceiptAnnotation = $annotationEntity['annotation'];
+        $personnalDataReceiptAnnotation = $this->annotationManager->getAnnotationFromTable($entityName);
         if(!$personnalDataReceiptAnnotation->isPersonnalDataProvider())
         {
             // PersonnalData can only be declared by a PersonnalDataProvider
             return;
         }
-        $entityName = ClassUtils::getClass($entity);
         $entityMetaData = $this->em->getClassMetadata($entityName);
         $entityId = $this->propertyAccessor->getValue($entity, $entityMetaData->getSingleIdentifierFieldName());
         $personnalDataProvider = $this->personnalDataProviderManager->makeProviderByEntity($entity);
-        $transportType = PersonnalDataTransport::TYPE_IMPORT."-".$entityName."-".$index;
-        $personnalDataTransport = $this->getTransportByType($transportType);
+        $transportType = PersonnalDataTransport::TYPE_IMPORT."-".$entityName."-".$entityId;
+        $personnalDataTransport = new PersonnalDataTransport($transportType);
+        $personnalDataTransport->setType($transportType);
         $personnalDataTransport->setPersonnalDataProvider($personnalDataProvider);
         $personnalDataConsent = null;
         if($withConsent)
@@ -302,20 +319,23 @@ class DataProtectionOfficer
             }
         }
         // Cascade
-        $annotationData = $this->annotationManager->getPersonnalDataFromEntity($entity);
+        $entityName = ClassUtils::getClass($entity);
         /** @var PersonnalDataReceipt $personnalDataReceiptAnnotation*/
-        $personnalDataReceiptAnnotation = $annotationData['annotation'];
+        $personnalDataReceiptAnnotation = $this->annotationManager->getAnnotationFromTable($entityName);
         $cascadeTo = $personnalDataReceiptAnnotation->getCascadeTo();
-        foreach ($cascadeTo as $className => $relation)
+        foreach ($cascadeTo as $indexCascade => $cascade)
         {
-            $mappedRelation = array_map(function($fieldName) use($propertyAccessor, $entity) {
-                $metaCar = $this->em->getClassMetadata(ClassUtils::getClass($entity));
-                if(!$metaCar->hasField($fieldName))
-                {
-                    return $fieldName;
-                }
-                return $this->propertyAccessor->getValue($entity, $fieldName);
-            }, $relation);
+            foreach($cascade as $className => $relations)
+            {
+                $mappedRelation = array_map(function($fieldName) use($propertyAccessor, $entity) {
+                    $metaCar = $this->em->getClassMetadata(ClassUtils::getClass($entity));
+                    if(!$metaCar->hasField($fieldName))
+                    {
+                        return $fieldName;
+                    }
+                    return $this->propertyAccessor->getValue($entity, $fieldName);
+                }, $relations);
+            }
             $childs = $this->em->getRepository($className)->findBy($mappedRelation);
             foreach ($childs as $childEntity)
             {
@@ -365,7 +385,13 @@ class DataProtectionOfficer
         return $exportData;
     }
 
-    public function timeArchiver()
+    /**
+     * WiP
+     *
+     * @return void
+     */
+
+     public function timeArchiver(): void
     {
         $annotations = $this->annotationManager->getAllEntitiesAnnotations();
         foreach ($annotations as $entityName => $entityData) {

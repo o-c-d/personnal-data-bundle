@@ -50,6 +50,16 @@ services:
         arguments: ['@Doctrine\Common\Persistence\ManagerRegistry']
         tags:
             - { name: 'doctrine.repository_service' }
+    Ocd\PersonnalDataBundle\Repository\PersonnalDataProviderRepository:
+        class: Ocd\PersonnalDataBundle\Repository\PersonnalDataProviderRepository
+        arguments: ['@Doctrine\Common\Persistence\ManagerRegistry']
+        tags:
+            - { name: 'doctrine.repository_service' }
+    Ocd\PersonnalDataBundle\Repository\PersonnalDataTransportRepository:
+        class: Ocd\PersonnalDataBundle\Repository\PersonnalDataTransportRepository
+        arguments: ['@Doctrine\Common\Persistence\ManagerRegistry']
+        tags:
+            - { name: 'doctrine.repository_service' }
 
     # Command
     Ocd\PersonnalDataBundle\Command\PersonnalDataListCommand:

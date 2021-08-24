@@ -28,10 +28,11 @@ class AnnotationManager
         return $this->getPersonnalDataFromEntityName($entityClassPath);
     }
 
+    // TODO: add annotations validation e.g.: table with PersonnalDataReceipt but with no field with PersonnalData
+
     public function getPersonnalDataFromEntityName(string $entityClassPath): ?array
     {
         if(isset($this->annotations[$entityClassPath]) && isset($this->annotations[$entityClassPath]['fields'])) {
-            // TODO: rework
             $personnalDataAnnotations = [];
             foreach($this->annotations[$entityClassPath]['fields'] as $field)
             {
@@ -43,13 +44,20 @@ class AnnotationManager
         return null;
     }
 
+    public function getAnnotationFromTable(string $entityClassPath): ?PersonnalDataReceipt
+    {
+        if (isset($this->annotations[$entityClassPath]) && isset($this->annotations[$entityClassPath]['annotation'])) {
+            return $this->annotations[$entityClassPath]['annotation'];
+        }
+        return null;
+    }
+
     public function getAnnotationFromField(string $entityClassPath, string $fieldName): ?PersonnalData
     {
         if (isset($this->annotations[$entityClassPath]) && isset($this->annotations[$entityClassPath]['fields'][$fieldName])) {
             return $this->annotations[$entityClassPath]['fields'][$fieldName];
         }
         return null;
-
     }
 
     public function hasPersonnalData(string $entityClassPath): bool

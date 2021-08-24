@@ -24,6 +24,7 @@ class PersonnalDataTransport
     const TYPE_COLLECT = "COLLECT";
     const TYPE_EXPOSE = "EXPOSE";
     const TYPE_EXPORT = "EXPORT";
+    const TYPE_IMPORT = "IMPORT";
 
     /**
      * @ORM\Id

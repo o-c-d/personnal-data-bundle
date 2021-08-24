@@ -6,7 +6,8 @@ use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataRegister;
 use Ocd\PersonnalDataBundle\Annotation\AnnotationManager;
-
+use Ocd\PersonnalDataBundle\Annotation\PersonnalDataReceipt;
+use Ocd\PersonnalDataBundle\Annotation\PersonnalData;
 
 class PersonnalDataRegisterManager
 {
@@ -31,17 +32,22 @@ class PersonnalDataRegisterManager
         $entityName = ClassUtils::getClass($entity);
         // $entityId = $entity->getId();
         $personnalDataAnnotations = $this->annotationManager->getPersonnalDataFromEntity($entity);
-        // TODOs: check if entity has annotation
-        // $personnalDataReceiptAnnotation = $personnalDataAnnotations['annotation'];
-
-        $fields = $this->em->getClassMetadata($entityName)->getColumnNames();
-        foreach ($fields as $fieldName) {
-            if($this->annotationManager->isPersonnalData($entityName, $fieldName))
-            {
-                $personnalDatas[] = $this->makePersonnalDataRegisterFromEntity($entity, $fieldName);
+        if(!empty($personnalDataAnnotations))
+        {
+            // TODOs: check if entity has annotation softdelete => si deletedAt > conservationDurationtion propose to anonymize
+            /** @var PersonnalDataReceipt $personnalDataReceiptAnnotation */
+            $personnalDataReceiptAnnotation = $this->annotationManager->getAnnotationFromTable($entityName);
+            $softDeletedBy = $personnalDataReceiptAnnotation->getSoftDeletedBy();
+            $fields = $this->em->getClassMetadata($entityName)->getColumnNames();
+            foreach ($fields as $fieldName) {
+                if($this->annotationManager->isPersonnalData($entityName, $fieldName))
+                {
+                    $personnalDatas[] = $this->makePersonnalDataRegisterFromEntity($entity, $fieldName);
+                }
             }
+    
         }
-        return $personnalDatas;
+       return $personnalDatas;
     }
 
     public function makePersonnalDataRegisterFromEntity($entity, $fieldName): ?PersonnalDataRegister
@@ -76,5 +82,10 @@ class PersonnalDataRegisterManager
             'fieldName' => $fieldName,
         ]);
         return $personnalDataRegister;
+    }
+
+    public function getDeclaredFieldsFromTable($tableName): array
+    {
+
     }
 }

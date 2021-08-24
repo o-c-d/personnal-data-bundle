@@ -90,7 +90,17 @@ class PersonnalDataRegister
     private $finalArchivedAt;
 
     /**
-     * The corresponding entity's deletion DateTime
+     * This personnal should be archived on next archiving iteration
+     * if not archived => intermediate archiving
+     * if intermediate => final archiving
+     * @var bool
+     *
+     * @ORM\Column(type="boolean", options={"default":"0"})
+     */
+    private $toBeArchived;
+
+    /**
+     * The corresponding entity's hard deletion DateTime
      * @var ?DateTime
      *
      * @ORM\Column(name="has_been_deleted_at", type="datetime", nullable=true)

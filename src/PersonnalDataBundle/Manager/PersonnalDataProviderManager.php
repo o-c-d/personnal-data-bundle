@@ -5,6 +5,7 @@ namespace Ocd\PersonnalDataBundle\Manager;
 use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
 use Ocd\PersonnalDataBundle\Entity\PersonnalDataProvider;
+use Symfony\Component\PropertyAccess\PropertyAccess;
 
 class PersonnalDataProviderManager
 {
